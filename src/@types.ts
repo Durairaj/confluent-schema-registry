@@ -3,7 +3,7 @@ export interface Schema {
   fromBuffer: (payload: object) => Buffer // FIXME:
   isValid: (payload: object, opts: { errorHook: (path: any) => void }) => void // FIXME:
   name: string
-  namespace: string
+  namespace?: string
 }
 
 declare global {

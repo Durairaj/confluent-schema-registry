@@ -14,15 +14,27 @@ const collectInvalidPaths = (schema: Schema, jsonPayload: object) => {
 
 export const MAGIC_BYTE = Buffer.alloc(1)
 
-export const encode = (schema: Schema, registryId: number, jsonPayload: any) => {
+export const encode = (schema: Schema| any, registryId: number, jsonPayload: any) => {
+
+  console.log('schema :',schema)
+  console.log('registryId :',registryId)
+  console.log('jsonPayload :',jsonPayload)
   let avroPayload
+  if(schema.namespace)
+  {
+
+  
+  
   try {
     avroPayload = schema.toBuffer(jsonPayload)
   } catch (error) {
     error.paths = collectInvalidPaths(schema, jsonPayload)
     throw error
   }
-
+}
+else{
+  avroPayload = schema.encode(jsonPayload).finish();
+}
   const registryIdBuffer = Buffer.alloc(4)
   registryIdBuffer.writeInt32BE(registryId, DEFAULT_OFFSET)
 

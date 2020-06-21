@@ -16,6 +16,7 @@ import {
 } from './errors'
 import { Schema } from './@types'
 
+import * as protobuf from 'protobufjs'
 interface RegisteredSchema {
   id: number
 }
@@ -29,6 +30,16 @@ interface Opts {
 const DEFAULT_OPTS = {
   compatibility: COMPATIBILITY.BACKWARD,
   separator: DEFAULT_SEPERATOR,
+}
+
+function traverseTypes(current: any, fn: any) {
+  if (current instanceof protobuf.Type)
+    // and/or protobuf.Enum, protobuf.Service etc.
+    fn(current)
+  if (current.nestedArray)
+    current.nestedArray.forEach(function(nested: any) {
+      traverseTypes(nested, fn)
+    })
 }
 
 export default class SchemaRegistry {
@@ -94,7 +105,7 @@ export default class SchemaRegistry {
     return registeredSchema
   }
 
-  public async getSchema(registryId: number): Promise<Schema> {
+  public async getSchema(registryId: number): Promise<Schema | any> {
     const schema = this.cache.getSchema(registryId)
 
     if (schema) {
@@ -102,8 +113,23 @@ export default class SchemaRegistry {
     }
 
     const response = await this.getSchemaOriginRequest(registryId)
-    const foundSchema: { schema: string } = response.data()
-    const rawSchema: Schema = JSON.parse(foundSchema.schema)
+    const foundSchema: { schema: string; schemaType?: string } = response.data()
+
+    console.log('foundSchema :', foundSchema)
+    if (foundSchema.schemaType === 'PROTOBUF') {
+      const root = protobuf.parse(foundSchema.schema).root
+      let protoName = ''
+      traverseTypes(root, function(type: any) {
+        protoName = type.name
+      })
+
+      const msgType = root.lookup(protoName)
+
+      return this.cache.setSchema(registryId, msgType, true)
+    }
+    console.log('not coming here :')
+    const rawSchema = JSON.parse(foundSchema.schema)
+    //}
 
     return this.cache.setSchema(registryId, rawSchema)
   }
@@ -116,6 +142,8 @@ export default class SchemaRegistry {
     }
 
     const schema = await this.getSchema(registryId)
+
+    console.log('schema :', schema)
 
     return encode(schema, registryId, jsonPayload)
   }
@@ -136,6 +164,7 @@ export default class SchemaRegistry {
 
     const schema = await this.getSchema(registryId)
 
+    console.log('schema :', schema)
     return schema.fromBuffer(payload)
   }
 
