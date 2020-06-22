@@ -16,7 +16,7 @@ import {
 } from './errors'
 import { Schema } from './@types'
 
-import * as protobuf from 'protobufjs'
+// import * as protobuf from 'protobufjs'
 interface RegisteredSchema {
   id: number
 }
@@ -117,9 +117,7 @@ export default class SchemaRegistry {
 
     console.log('foundSchema :', foundSchema)
     if (foundSchema.schemaType === 'PROTOBUF') {
-      const root = protobuf.parse(foundSchema.schema, { keepCase: true }).root
-
-      return this.cache.setSchema(registryId, root, true)
+      return this.cache.setSchema(registryId, foundSchema.schema, true)
     }
     console.log('not coming here :')
     const rawSchema = JSON.parse(foundSchema.schema)

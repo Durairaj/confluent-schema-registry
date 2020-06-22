@@ -1,5 +1,7 @@
 import { Schema } from './@types'
-import protobufRunTime from 'protobufjs/runtime'
+// import * as protobuf from 'protobufjs'
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const Protobuf = require('protobufjs')
 
 const DEFAULT_OFFSET = 0
 
@@ -15,7 +17,7 @@ const collectInvalidPaths = (schema: Schema, jsonPayload: object) => {
 
 export const MAGIC_BYTE = Buffer.alloc(1)
 
-export const encode = (schema: Schema | any, registryId: number, jsonPayload: any) => {
+export const encode = async (schema: Schema | any, registryId: number, jsonPayload: any) => {
   let avroPayload
   if (schema.namespace) {
     try {
@@ -25,11 +27,19 @@ export const encode = (schema: Schema | any, registryId: number, jsonPayload: an
       throw error
     }
   } else {
-    avroPayload = protobuf.Writer.create()
-      .uint32(((1 << 3) | 2) >>> 0) // id 1, wireType 2
-      .string('hello world!')
-      .finish()
-    console.log('buf', avroPayload)
+    const root = Protobuf.parse(schema, { keepCase: true }).root
+
+    console.log('json payload :', jsonPayload)
+    const messageType = root.lookupType('MyRecord')
+    const errMsg = messageType.verify(jsonPayload)
+    console.log('sehcma verify :', messageType.verify(jsonPayload))
+    if (errMsg) {
+      console.error(errMsg)
+      throw Error(errMsg)
+    }
+    const msg = await messageType.encode(jsonPayload).finish()
+    avroPayload = msg
+    console.log('buf', msg)
   }
   const registryIdBuffer = Buffer.alloc(4)
   registryIdBuffer.writeInt32BE(registryId, DEFAULT_OFFSET)
