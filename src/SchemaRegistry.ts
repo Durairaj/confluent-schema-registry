@@ -32,15 +32,15 @@ const DEFAULT_OPTS = {
   separator: DEFAULT_SEPERATOR,
 }
 
-function traverseTypes(current: any, fn: any) {
-  if (current instanceof protobuf.Type)
-    // and/or protobuf.Enum, protobuf.Service etc.
-    fn(current)
-  if (current.nestedArray)
-    current.nestedArray.forEach(function(nested: any) {
-      traverseTypes(nested, fn)
-    })
-}
+// function traverseTypes(current: any, fn: any) {
+//   if (current instanceof protobuf.Type)
+//     // and/or protobuf.Enum, protobuf.Service etc.
+//     fn(current)
+//   if (current.nestedArray)
+//     current.nestedArray.forEach(function(nested: any) {
+//       traverseTypes(nested, fn)
+//     })
+// }
 
 export default class SchemaRegistry {
   private api: SchemaRegistryAPIClient
@@ -117,15 +117,9 @@ export default class SchemaRegistry {
 
     console.log('foundSchema :', foundSchema)
     if (foundSchema.schemaType === 'PROTOBUF') {
-      const root = protobuf.parse(foundSchema.schema).root
-      let protoName = ''
-      traverseTypes(root, function(type: any) {
-        protoName = type.name
-      })
+      const root = protobuf.parse(foundSchema.schema, { keepCase: true }).root
 
-      const msgType = root.lookup(protoName)
-
-      return this.cache.setSchema(registryId, msgType, true)
+      return this.cache.setSchema(registryId, root, true)
     }
     console.log('not coming here :')
     const rawSchema = JSON.parse(foundSchema.schema)
