@@ -29,6 +29,8 @@ export const encode = async (schema: Schema | any, registryId: number, jsonPaylo
   } else {
     const root = Protobuf.parse(schema, { keepCase: true }).root
 
+    console.log('root :', root)
+
     console.log('json payload :', jsonPayload)
     const messageType = root.lookupType('MyRecord')
     const errMsg = messageType.verify(jsonPayload)
