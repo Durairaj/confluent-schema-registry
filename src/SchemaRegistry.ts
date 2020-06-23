@@ -15,6 +15,7 @@ import {
   ConfluentSchemaRegistryCompatibilityError,
 } from './errors'
 import { Schema } from './@types'
+const Protobuf = require('protobufjs')
 
 // import * as protobuf from 'protobufjs'
 interface RegisteredSchema {
@@ -157,7 +158,14 @@ export default class SchemaRegistry {
     const schema = await this.getSchema(registryId)
 
     console.log('schema :', schema)
-    return schema.fromBuffer(payload)
+    console.log('payload :', payload)
+    if (schema.namespace) {
+      return schema.fromBuffer(payload)
+    }
+
+    const root = Protobuf.parse(schema, { keepCase: true }).root
+    const messageType = root.lookupType('MyRecord')
+    return messageType.decode(payload)
   }
 
   public async getRegistryId(subject: string, version: number | string): Promise<number> {
